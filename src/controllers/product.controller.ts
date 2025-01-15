@@ -1,0 +1,99 @@
+import { Response, Request } from 'express'
+import ProductModel from '../models/product.model'
+import path from 'path'
+import fs from 'fs'
+import { IRequest } from 'types'
+export const getProducts = async (req: IRequest, res: Response) => {
+	try {
+		const products = await ProductModel.find()
+		res.json(products)
+	} catch (err) {
+		res.status(500).json({ error: 'Eroare la obținerea produselor' })
+	}
+}
+
+export const getProduct = async (req: IRequest, res: Response) => {
+	try {
+		const product = await ProductModel.findById(req.params.id)
+		if (product) {
+			res.json(product)
+		} else {
+			res.status(404).json({ message: 'Produsul nu a fost găsit' })
+		}
+	} catch (err) {
+		res.status(500).json({ error: 'Eroare la obținerea produsului' })
+	}
+}
+
+export const createProduct = async (req: Request, res: Response) => {
+	try {
+		console.log('return formdata at backend', req.body)
+		const { name, description, price, quantityInGrams } = req.body
+		const imageUrl = req.file ? `images/${req.file.filename}` : ''
+		console.log('imageUrl', imageUrl)
+
+		const newProduct = new ProductModel({
+			name,
+			description,
+			price,
+			quantityInGrams,
+			imageUrl,
+		})
+
+		const savedProduct = await newProduct.save()
+		const actualProduct = savedProduct.toObject({ versionKey: false })
+		res.status(201).json(actualProduct)
+	} catch (err) {
+		res.status(500).json({ error: 'Eroare la crearea produsului', err })
+	}
+}
+
+export const updateProduct = async (req: Request, res: Response) => {
+	try {
+		const { name, description, price, quantityInGrams } = req.body
+
+		const product = await ProductModel.findById(req.params.id)
+		let newImageUrl = product?.imageUrl || ''
+		if (req.file) {
+			newImageUrl = `images/${req.file.filename}`
+		}
+		if (product && newImageUrl !== product.imageUrl) {
+			const filePath = path.join(__dirname, '../public', product.imageUrl)
+			fs.unlinkSync(filePath)
+		}
+		const updatedProduct = await ProductModel.findByIdAndUpdate(
+			req.params.id,
+			{
+				name,
+				description,
+				price,
+				quantityInGrams,
+				imageUrl: newImageUrl,
+			},
+			{ new: true }
+		).select('-__v')
+		if (updatedProduct) {
+			res.json(updatedProduct)
+		} else {
+			res.status(404).json({ message: 'Produsul nu a fost găsit' })
+		}
+	} catch (err) {
+		res.status(500).json({ error: 'Eroare la actualizarea produsului' })
+	}
+}
+
+export const deleteProduct = async (req: IRequest, res: Response) => {
+	try {
+		const deletedProduct = await ProductModel.findByIdAndDelete(
+			req.params.id
+		)
+
+		if (deletedProduct) {
+			res.status(200).json({ message: 'Produs șters cu succes' })
+		} else {
+			res.status(404).json({ message: 'Produsul nu a fost găsit' })
+		}
+	} catch (err) {
+		res.status(500).json({ error: 'Eroare la ștergerea produsului' })
+	}
+}
