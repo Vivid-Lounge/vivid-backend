@@ -8,6 +8,7 @@ import qrRoutes from './src/routes/qr.routes'
 import authRoutes from './src/routes/auth.routes'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
+import eventRoutes from './src/routes/event.routes'
 dotenv.config()
 const app = express()
 mongoose
@@ -21,14 +22,14 @@ app.use(express.json())
 app.use(
 	cors({
 		credentials: true,
-		origin: 'http://localhost:5173',
+		origin: ['http://localhost:5173', 'http://localhost:5174'],
 	})
 )
 app.use(cookieParser())
 app.use('/images', express.static(path.join(__dirname, './public/images')))
 app.use('/qrcodes', express.static(path.join(__dirname, './public/qrcodes')))
 
-app.use('/api', [productRoutes, orderRoutes, qrRoutes, authRoutes])
+app.use('/api', [productRoutes, orderRoutes, eventRoutes, qrRoutes, authRoutes])
 
 app.use(
 	(
