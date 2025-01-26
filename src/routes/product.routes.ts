@@ -9,11 +9,13 @@ import {
 import { body } from 'express-validator'
 import multer from 'multer'
 import { authMiddleware } from '../workers/middlewares'
+import { setupUploadDirectories } from '../workers/setupUploadDir'
 const router = Router()
 // Configure multer for file uploads
+const uploadDir = setupUploadDirectories()
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
-		cb(null, 'public/images') // Specify the destination folder
+		cb(null, uploadDir) // Specify the destination folder
 	},
 	filename: (req, file, cb) => {
 		cb(null, `${Date.now()}-${file.originalname}`) // Specify the file naming convention

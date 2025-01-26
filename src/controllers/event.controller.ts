@@ -50,19 +50,19 @@ export const createEvent = async (req: IRequest, res: Response) => {
 
 		const slug = title ? title.toLowerCase().replace(/ /g, '-') : date
 
-		// Ensure upload directory exists
-		const uploadDir = path.join(process.cwd(), 'public', 'images', 'events')
-		if (!fs.existsSync(uploadDir)) {
-			fs.mkdirSync(uploadDir, { recursive: true })
-		}
-		console.log(uploadDir)
+		// // Ensure upload directory exists
+		// const uploadDir = path.join(process.cwd(), 'public', 'images', 'events')
+		// if (!fs.existsSync(uploadDir)) {
+		// 	fs.mkdirSync(uploadDir, { recursive: true })
+		// }
+		// console.log(uploadDir)
 
-		const posterImage = `${req.protocol}://${req.get(
-			'host'
-		)}/images/events/${files.posterImage[0].filename}`
-		const coverImage = `${req.protocol}://${req.get(
-			'host'
-		)}/images/events/${files.coverImage[0].filename}`
+		const posterImage = `${req.protocol}://${req.get('host')}/images/${
+			files.posterImage[0].filename
+		}`
+		const coverImage = `${req.protocol}://${req.get('host')}/images/${
+			files.coverImage[0].filename
+		}`
 		const newEvent = new EventModel({
 			title,
 			posterImage,
@@ -137,14 +137,14 @@ export const updateEvent = async (req: IRequest, res: Response) => {
 
 		// Update image paths if new files uploaded
 		if (files.posterImage) {
-			event.posterImage = `${req.protocol}://${req.get(
-				'host'
-			)}/images/events/${files.posterImage[0].filename}`
+			event.posterImage = `${req.protocol}://${req.get('host')}/images/${
+				files.posterImage[0].filename
+			}`
 		}
 		if (files.coverImage) {
-			event.coverImage = `${req.protocol}://${req.get(
-				'host'
-			)}/images/events/${files.coverImage[0].filename}`
+			event.coverImage = `${req.protocol}://${req.get('host')}/images/${
+				files.coverImage[0].filename
+			}`
 		}
 
 		const updatedEvent = await event.save()

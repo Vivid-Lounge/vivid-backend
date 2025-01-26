@@ -29,7 +29,10 @@ export const createProduct = async (req: Request, res: Response) => {
 	try {
 		console.log('return formdata at backend', req.body)
 		const { name, description, price, quantityInGrams } = req.body
-		const imageUrl = req.file ? `images/${req.file.filename}` : ''
+		const file = req.file as Express.Multer.File
+		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
+			file.filename
+		}`
 		console.log('imageUrl', imageUrl)
 
 		const newProduct = new ProductModel({
@@ -51,16 +54,12 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
 	try {
 		const { name, description, price, quantityInGrams } = req.body
-
+		const file = req.file as Express.Multer.File
+		console.log(file)
 		const product = await ProductModel.findById(req.params.id)
-		let newImageUrl = product?.imageUrl || ''
-		if (req.file) {
-			newImageUrl = `images/${req.file.filename}`
-		}
-		if (product && newImageUrl !== product.imageUrl) {
-			const filePath = path.join(__dirname, '../public', product.imageUrl)
-			fs.unlinkSync(filePath)
-		}
+		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
+			file.filename
+		}`
 		const updatedProduct = await ProductModel.findByIdAndUpdate(
 			req.params.id,
 			{
@@ -68,7 +67,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 				description,
 				price,
 				quantityInGrams,
-				imageUrl: newImageUrl,
+				imageUrl,
 			},
 			{ new: true }
 		).select('-__v')
@@ -78,6 +77,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 			res.status(404).json({ message: 'Produsul nu a fost găsit' })
 		}
 	} catch (err) {
+		console.log(err)
 		res.status(500).json({ error: 'Eroare la actualizarea produsului' })
 	}
 }
