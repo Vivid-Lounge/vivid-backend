@@ -37,7 +37,7 @@ export const generateQR = async (req: IRequest, res: Response) => {
 
 			const qrImage = await Jimp.Jimp.read(qrBuffer)
 
-			const logoPath = path.join(__dirname, '../public/logo/logo.png')
+			const logoPath = path.join(__dirname, '../../public/logo/logo.png')
 			const logoImage = await Jimp.Jimp.read(logoPath)
 
 			const qrWidth = qrImage.bitmap.width
@@ -62,7 +62,7 @@ export const generateQR = async (req: IRequest, res: Response) => {
 				.split('/')
 				.pop()}___${randomUUID}.png`
 
-			const folderPath = path.join(__dirname, '../public/qrcodes')
+			const folderPath = path.join(__dirname, '../../public/qrcodes')
 
 			await fs_async.mkdir(folderPath, { recursive: true })
 
@@ -85,7 +85,7 @@ export const generateQR = async (req: IRequest, res: Response) => {
 		res.status(200).json(newQRCodes)
 	} catch (err) {
 		console.error('Eroare la generarea codului QR:', err)
-		res.status(500).json({ error: 'Eroare la generarea codului QR' })
+		res.status(500).json({ error: 'Eroare la generarea codului QR'})
 	}
 }
 
@@ -126,7 +126,7 @@ export const deleteAllQRCodes = async (req: IRequest, res: Response) => {
 		if (qrCodes) {
 			await QRModel.deleteMany({})
 			await orderModel.deleteMany({})
-			const folderPath = path.join(__dirname, '../public/qrcodes')
+			const folderPath = path.join(__dirname, '../../public/qrcodes')
 			const files = fs.readdirSync(folderPath)
 			for (const file of files) {
 				fs.unlinkSync(path.join(folderPath, file))
@@ -138,7 +138,7 @@ export const deleteAllQRCodes = async (req: IRequest, res: Response) => {
 			res.status(404).json({ message: 'Codurile QR nu au fost găsite' })
 		}
 	} catch (err) {
-		res.status(500).json({ error: 'Eroare la ștergerea codurilor QR' })
+		res.status(500).json({ error: err })
 	}
 }
 export const getQRCode = async (req: IRequest, res: Response) => {

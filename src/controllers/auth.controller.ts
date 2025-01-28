@@ -7,15 +7,24 @@ import jwt from 'jsonwebtoken'
 import { IRequest } from 'types'
 export const createAccount = async (req: IRequest, res: Response) => {
 	try {
+		console.log(req.body)
+
 		const {
 			firstName,
-			lastName,
+			lastName, 
 			accountUsername,
-			password: accountPassword,
+			accountPassword: accountPassword,
 			confirmPassword: accountConfirmPassword,
 			role: privilage,
 		} = req.body
-		console.log(req.body)
+
+
+		console.log("firstName:", firstName);
+		console.log("lastName:", lastName);
+		console.log("accountUsername:", accountUsername);
+		console.log("accountPassword:", accountPassword);
+		console.log("accountConfirmPassword:", accountConfirmPassword);
+		console.log("privilage:", privilage);
 
 		const foundAccount = await AuthModel.find({
 			accountUsername: { $in: accountUsername },
@@ -25,7 +34,7 @@ export const createAccount = async (req: IRequest, res: Response) => {
 			res.status(422).json({ error: 'Contul deja exista!' })
 			return
 		}
-
+		console.log(accountConfirmPassword + " " + accountPassword)
 		if (accountPassword != accountConfirmPassword) {
 			res.status(403).json({ error: 'Parolele nu coincid!' })
 			return
@@ -34,13 +43,13 @@ export const createAccount = async (req: IRequest, res: Response) => {
 			.createHash('sha512')
 			.update(accountPassword)
 			.digest('hex')
-
+		
 		const newAccount = new AuthModel({
 			firstName,
 			lastName,
 			accountUsername,
 			accountPassword: hashedPassword,
-			privilage,
+			privilage
 		})
 
 		const savedAccount = await newAccount.save()
