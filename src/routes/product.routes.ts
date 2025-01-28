@@ -5,6 +5,7 @@ import {
 	createProduct,
 	updateProduct,
 	deleteProduct,
+	toggleProductVisibility,
 } from '../controllers/product.controller'
 import { body } from 'express-validator'
 import multer from 'multer'
@@ -46,5 +47,5 @@ router.put(
 	updateProduct
 )
 router.delete('/products/:id', authMiddleware, deleteProduct)
-
+router.put('/products/:id/toggle', authMiddleware, toggleProductVisibility)
 export default router

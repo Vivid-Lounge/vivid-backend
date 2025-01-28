@@ -3,5 +3,6 @@ export interface Product extends Document {
 	description: string
 	price: number
 	quantityInGrams: number
+	isVisible: boolean
 	imageUrl: string
 }

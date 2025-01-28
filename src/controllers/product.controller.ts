@@ -30,6 +30,7 @@ export const createProduct = async (req: Request, res: Response) => {
 		console.log('return formdata at backend', req.body)
 		const { name, description, price, quantityInGrams } = req.body
 		const file = req.file as Express.Multer.File
+
 		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
 			file.filename
 		}`
@@ -45,7 +46,7 @@ export const createProduct = async (req: Request, res: Response) => {
 
 		const savedProduct = await newProduct.save()
 		const actualProduct = savedProduct.toObject({ versionKey: false })
-		res.status(201).json(actualProduct)
+		res.status(200).json(actualProduct)
 	} catch (err) {
 		res.status(500).json({ error: 'Eroare la crearea produsului', err })
 	}
@@ -57,9 +58,9 @@ export const updateProduct = async (req: Request, res: Response) => {
 		const file = req.file as Express.Multer.File
 		console.log(file)
 		const product = await ProductModel.findById(req.params.id)
-		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
-			file.filename
-		}`
+		const imageUrl = file
+			? `${req.protocol}://${req.get('host')}/images/${file.filename}`
+			: product?.imageUrl
 		const updatedProduct = await ProductModel.findByIdAndUpdate(
 			req.params.id,
 			{
@@ -78,7 +79,10 @@ export const updateProduct = async (req: Request, res: Response) => {
 		}
 	} catch (err) {
 		console.log(err)
-		res.status(500).json({ error: 'Eroare la actualizarea produsului' })
+		res.status(500).json({
+			error: 'Eroare la actualizarea produsului',
+			err: err,
+		})
 	}
 }
 
@@ -95,5 +99,26 @@ export const deleteProduct = async (req: IRequest, res: Response) => {
 		}
 	} catch (err) {
 		res.status(500).json({ error: 'Eroare la ștergerea produsului' })
+	}
+}
+
+export const toggleProductVisibility = async (req: IRequest, res: Response) => {
+	try {
+		const product = await ProductModel.findById(req.params.id)
+		if (product) {
+			const updatedProduct = await ProductModel.findByIdAndUpdate(
+				req.params.id,
+				{ isVisible: !product.isVisible },
+				{ new: true }
+			).select('-__v')
+			res.status(200).json(updatedProduct)
+		} else {
+			res.status(404).json({ message: 'Produsul nu a fost găsit' })
+		}
+	} catch (err) {
+		res.status(500).json({
+			error: 'Eroare la actualizarea produsului',
+			err: err,
+		})
 	}
 }
