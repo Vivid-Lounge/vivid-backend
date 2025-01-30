@@ -7,6 +7,16 @@ const productSchema = new mongoose.Schema({
 	description: String,
 	price: { type: Number, required: true },
 	quantityInGrams: Number,
+	parentCategory: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: 'Category',
+		default: null,
+	},
+	childCategory: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: 'Category',
+		default: null,
+	},
 	isVisible: { type: Boolean, default: true },
 	imageUrl: String,
 })

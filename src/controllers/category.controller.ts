@@ -2,11 +2,14 @@ import { IRequest } from 'types'
 import { Response } from 'express'
 import CategoryModel from '../models/category.model'
 import { Category } from 'shared/types'
+
 export const createCategory = async (req: IRequest, res: Response) => {
 	try {
-		console.log('req.body', req.body)
-		const categories = req.body.categories as Array<Category>
-		console.log(categories, 'categories at backend at createCategory')
+		const categories = req.body.categories as Array<{
+			name: string
+			parent: string | null
+			_id: string
+		}>
 		await CategoryModel.deleteMany()
 		const parentCategories = categories.filter(
 			(category) => category.parent === null

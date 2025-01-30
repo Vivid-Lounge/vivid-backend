@@ -3,9 +3,13 @@ import ProductModel from '../models/product.model'
 import path from 'path'
 import fs from 'fs'
 import { IRequest } from 'types'
+import CategoryModel from '../models/category.model'
 export const getProducts = async (req: IRequest, res: Response) => {
 	try {
 		const products = await ProductModel.find()
+			.select('-__v')
+			.populate('parentCategory')
+			.populate('childCategory')
 		res.json(products)
 	} catch (err) {
 		res.status(500).json({ error: 'Eroare la obținerea produselor' })
@@ -27,20 +31,24 @@ export const getProduct = async (req: IRequest, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
 	try {
-		console.log('return formdata at backend', req.body)
-		const { name, description, price, quantityInGrams } = req.body
+		const { name, description, price, quantityInGrams, parentId, childId } =
+			req.body
 		const file = req.file as Express.Multer.File
-
+		const parentCategoryDoc = await CategoryModel.findById(parentId)
+		const childCategoryDoc = await CategoryModel.findById(childId)
+		console.log('parentCategoryDoc', parentCategoryDoc)
+		console.log('childCategoryDoc', childCategoryDoc)
 		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
 			file.filename
 		}`
-		console.log('imageUrl', imageUrl)
 
 		const newProduct = new ProductModel({
 			name,
 			description,
 			price,
 			quantityInGrams,
+			parentCategory: parentCategoryDoc ? parentCategoryDoc._id : null,
+			childCategory: childCategoryDoc ? childCategoryDoc._id : null,
 			imageUrl,
 		})
 
@@ -54,10 +62,16 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
 	try {
-		const { name, description, price, quantityInGrams } = req.body
+		const { name, description, price, quantityInGrams, parentId, childId } =
+			req.body
 		const file = req.file as Express.Multer.File
 		console.log(file)
+		console.log(req.body)
 		const product = await ProductModel.findById(req.params.id)
+		const parentCategoryDoc = await CategoryModel.findById(parentId)
+		const childCategoryDoc = await CategoryModel.findById(childId)
+		console.log('parentCategoryDoc', parentCategoryDoc)
+		console.log('childCategoryDoc', childCategoryDoc)
 		const imageUrl = file
 			? `${req.protocol}://${req.get('host')}/images/${file.filename}`
 			: product?.imageUrl
@@ -68,10 +82,17 @@ export const updateProduct = async (req: Request, res: Response) => {
 				description,
 				price,
 				quantityInGrams,
+				parentCategory: parentCategoryDoc
+					? parentCategoryDoc._id
+					: null,
+				childCategory: childCategoryDoc ? childCategoryDoc._id : null,
 				imageUrl,
 			},
 			{ new: true }
-		).select('-__v')
+		)
+			.select('-__v')
+			.populate('parentCategory')
+			.populate('childCategory')
 		if (updatedProduct) {
 			res.json(updatedProduct)
 		} else {
