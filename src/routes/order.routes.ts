@@ -9,7 +9,7 @@ import {
 	getOrdersByTable,
 } from '../controllers/order.controller'
 import { body } from 'express-validator'
-import { authMiddleware } from '../workers/middlewares'
+import { authMiddleware, isAdminMiddleware } from '../workers/middlewares'
 const router = Router()
 
 router.get('/orders', authMiddleware, getOrders)

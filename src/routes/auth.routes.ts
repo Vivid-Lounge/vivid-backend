@@ -12,7 +12,7 @@ import { body } from 'express-validator'
 import {
 	authMiddleware,
 	isAdminMiddleware,
-	initialAuthMiddleware,
+	ensureClientVeridicity,
 } from '../workers/middlewares'
 
 const router = Router()
@@ -20,12 +20,7 @@ const router = Router()
 router.get('/accounts', authMiddleware, isAdminMiddleware, getAccounts)
 // router.post('/login', loginAccount);
 
-router.post(
-	'/login',
-	[body('accountUsername'), body('accountPassword')],
-	initialAuthMiddleware,
-	loginAccount
-)
+router.post('/login', ensureClientVeridicity, loginAccount)
 router.get('/logout', authMiddleware, logout)
 router.delete(
 	'/deleteAccount',
@@ -44,12 +39,13 @@ router.post(
 
 		body('accountUsername'),
 		body('accountPassword'),
-		body('privilage')
+		body('role')
 			.isInt({ gt: 0 })
 			.withMessage('Permisiunile acordate utilizatorului sunt invalide!'),
 	],
+	ensureClientVeridicity,
 	authMiddleware,
-	isAdminMiddleware,
+
 	createAccount
 )
 

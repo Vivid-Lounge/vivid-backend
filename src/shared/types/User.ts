@@ -2,7 +2,7 @@ import { Document } from 'mongoose'
 export interface User extends Document {
 	firstName: string
 	lastName: string
-	privilage: number
+	role: number
 	accountUsername: string
 	accountPassword?: string
 	createdBy: string

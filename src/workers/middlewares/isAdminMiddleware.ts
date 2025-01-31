@@ -6,7 +6,8 @@ export const isAdminMiddleware = (
 	res: Response,
 	next: NextFunction
 ) => {
-	if (req.user && req.user.privilage == 2) {
+	console.log(req.user, 'dwdwdw')
+	if (req.user && req.user.role === 0) {
 		next()
 	} else {
 		res.status(401)

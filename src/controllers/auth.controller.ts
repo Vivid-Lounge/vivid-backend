@@ -11,9 +11,9 @@ export const createAccount = async (req: IRequest, res: Response) => {
 			firstName,
 			lastName,
 			accountUsername,
-			password: accountPassword,
-			confirmPassword: accountConfirmPassword,
-			role: privilage,
+			accountPassword,
+			accountConfirmPassword,
+			role,
 		} = req.body
 		console.log(req.body)
 
@@ -40,7 +40,7 @@ export const createAccount = async (req: IRequest, res: Response) => {
 			lastName,
 			accountUsername,
 			accountPassword: hashedPassword,
-			privilage,
+			role,
 		})
 
 		const savedAccount = await newAccount.save()
@@ -84,15 +84,17 @@ export const loginAccount = async (req: IRequest, res: Response) => {
 			res.status(500).json({ error: 'JWT_SECRET is not defined' })
 			return
 		}
-		const accountPrivilage = foundAccount.privilage
+		const accountPrivilage = foundAccount.role
 		jwt.sign(
 			{
 				_id: foundAccount._id,
 				accountUsername: accountUsername,
-				privilage: foundAccount.privilage,
+				role: foundAccount.role,
 			},
 			tokenSecret,
-			{},
+			{
+				expiresIn: '24h',
+			},
 			async (err, token) => {
 				if (err) throw err
 				await AuthModel.findByIdAndUpdate(foundAccount._id, {
@@ -100,7 +102,7 @@ export const loginAccount = async (req: IRequest, res: Response) => {
 				})
 				return res.cookie('token', token).status(200).json({
 					username: accountUsername,
-					privilage: accountPrivilage,
+					role: accountPrivilage,
 					token: token,
 				})
 			}
@@ -189,13 +191,8 @@ export const getAccounts = async (req: IRequest, res: Response) => {
 export const alterAccount = async (req: IRequest, res: Response) => {
 	try {
 		const { id } = req.params
-		const {
-			firstName,
-			lastName,
-			accountUsername,
-			accountPassword,
-			privilage,
-		} = req.body
+		const { firstName, lastName, accountUsername, accountPassword, role } =
+			req.body
 
 		const updatedAccount = await AuthModel.findByIdAndUpdate(
 			id,
@@ -204,7 +201,7 @@ export const alterAccount = async (req: IRequest, res: Response) => {
 				lastName,
 				accountUsername,
 				accountPassword,
-				privilage,
+				role,
 			},
 			{ new: true }
 		)
@@ -226,9 +223,12 @@ export const alterAccount = async (req: IRequest, res: Response) => {
 export const retrieveMe = async (req: IRequest, res: Response) => {
 	try {
 		const user = req.user
+		const userDoc = await AuthModel.findById(user?._id)
+			.select('-accountPassword')
+			.select('-__v')
 		console.log('user', user)
 		if (user?._id) {
-			return res.status(200).json(user)
+			return res.status(200).json(userDoc)
 		} else {
 			throw new Error('User not found')
 		}
