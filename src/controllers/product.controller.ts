@@ -2,6 +2,7 @@ import { Response, Request } from 'express'
 import ProductModel from '../models/product.model'
 import path from 'path'
 import fs from 'fs'
+import fs_async from 'fs/promises'
 import { IRequest } from 'types'
 import CategoryModel from '../models/category.model'
 export const getProducts = async (req: IRequest, res: Response) => {
@@ -41,7 +42,8 @@ export const createProduct = async (req: Request, res: Response) => {
 		const childCategoryDoc = childId
 			? await CategoryModel.findById(childId)
 			: null
-
+		console.log('parentCategoryDoc', parentCategoryDoc)
+		console.log('childCategoryDoc', childCategoryDoc)
 		const imageUrl = `/images/${file.filename}`
 
 		const newProduct = new ProductModel({
@@ -112,13 +114,20 @@ export const deleteProduct = async (req: IRequest, res: Response) => {
 			req.params.id
 		)
 
+		await fs_async.unlink(
+			path.join(__dirname, `../../public/${deletedProduct?.imageUrl}`)
+		)
+
 		if (deletedProduct) {
 			res.status(200).json({ message: 'Produs șters cu succes' })
 		} else {
 			res.status(404).json({ message: 'Produsul nu a fost găsit' })
 		}
 	} catch (err) {
-		res.status(500).json({ error: 'Eroare la ștergerea produsului' })
+		res.status(500).json({
+			error: 'Eroare la ștergerea produsului',
+			msg: err,
+		})
 	}
 }
 
