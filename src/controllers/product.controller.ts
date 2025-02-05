@@ -33,9 +33,12 @@ export const createProduct = async (req: Request, res: Response) => {
 	try {
 		const { name, description, price, quantityInGrams, parentId, childId } =
 			req.body
+		console.log(req.body)
 		const file = req.file as Express.Multer.File
 		const parentCategoryDoc = await CategoryModel.findById(parentId)
-		const childCategoryDoc = await CategoryModel.findById(childId)
+		const childCategoryDoc = childId
+			? await CategoryModel.findById(childId)
+			: null
 		console.log('parentCategoryDoc', parentCategoryDoc)
 		console.log('childCategoryDoc', childCategoryDoc)
 		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
@@ -56,6 +59,7 @@ export const createProduct = async (req: Request, res: Response) => {
 		const actualProduct = savedProduct.toObject({ versionKey: false })
 		res.status(200).json(actualProduct)
 	} catch (err) {
+		console.log(err)
 		res.status(500).json({ error: 'Eroare la crearea produsului', err })
 	}
 }

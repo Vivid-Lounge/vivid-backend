@@ -20,8 +20,8 @@ const router = Router()
 router.get('/accounts', authMiddleware, isAdminMiddleware, getAccounts)
 // router.post('/login', loginAccount);
 
-router.post('/login', ensureClientVeridicity, loginAccount)
-router.get('/logout', authMiddleware, logout)
+router.post('/login', loginAccount)
+router.get('/logout', logout)
 router.delete(
 	'/deleteAccount',
 	[body('accountUsername')],
@@ -44,7 +44,7 @@ router.post(
 			.withMessage('Permisiunile acordate utilizatorului sunt invalide!'),
 	],
 	ensureClientVeridicity,
-	authMiddleware,
+	// authMiddleware,
 
 	createAccount
 )

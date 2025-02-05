@@ -1,57 +1,102 @@
 import { IRequest } from 'types'
 import { Response } from 'express'
-import CategoryModel from '../models/category.model'
 import { Category } from 'shared/types'
+import productModel from '../models/product.model'
 
-export const createCategory = async (req: IRequest, res: Response) => {
+import CategoryModel from '../models/category.model'
+import { Request } from 'express'
+interface ICategory {
+	name: string
+	parent: string | null
+	_id: string
+}
+export const updateCategories = async (req: Request, res: Response) => {
 	try {
-		const categories = req.body.categories as Array<{
-			name: string
-			parent: string | null
-			_id: string
-		}>
-		await CategoryModel.deleteMany()
-		const parentCategories = categories.filter(
-			(category) => category.parent === null
-		)
-		const parentCats = parentCategories.map(async (parentCategory) => {
-			return await CategoryModel.create({
-				name: parentCategory.name,
-				parent: null,
-			})
+		const submittedCategories = req.body.categories as Array<ICategory>
+
+		console.log(submittedCategories, 'submittedCategories')
+
+		// Fetch existing categories from the database
+		const existingCategories = await CategoryModel.find().lean()
+
+		// Determine categories to update, add, leave unchanged, and delete
+		const categoriesToUpdate = [] as Array<ICategory>
+		const categoriesToAdd = [] as Array<ICategory>
+		const categoriesToLeaveUnchanged = [] as Array<ICategory>
+		const categoriesToDelete = [] as string[]
+
+		submittedCategories.forEach((submittedCategory) => {
+			const existingCategory = existingCategories.find(
+				(category) => category._id.toString() === submittedCategory._id
+			)
+
+			if (existingCategory) {
+				if (
+					existingCategory.name !== submittedCategory.name ||
+					existingCategory.parent?.toString() !==
+						submittedCategory.parent
+				) {
+					categoriesToUpdate.push(submittedCategory)
+				} else {
+					categoriesToLeaveUnchanged.push(submittedCategory)
+				}
+			} else {
+				categoriesToAdd.push(submittedCategory)
+			}
 		})
-		const parents = await Promise.all(parentCats)
-		const childrenCategories = categories.filter(
-			(category) => category.parent !== null
+
+		existingCategories.forEach((existingCategory) => {
+			const isDeleted = !submittedCategories.find(
+				(submittedCategory) =>
+					submittedCategory._id === existingCategory._id.toString()
+			)
+
+			if (isDeleted) {
+				categoriesToDelete.push(existingCategory._id)
+			}
+		})
+
+		console.log(categoriesToUpdate, 'categoriesToUpdate')
+		console.log(categoriesToAdd, 'categoriesToAdd')
+		console.log(categoriesToLeaveUnchanged, 'categoriesToLeaveUnchanged')
+		console.log(categoriesToDelete, 'categoriesToDelete')
+
+		// Update categories
+		const updatePromises = categoriesToUpdate.map((category) =>
+			CategoryModel.findByIdAndUpdate(category._id, {
+				name: category.name,
+				parent: category.parent,
+			})
 		)
 
-		console.log(parents, 'parents after await')
-		const childrenCats = childrenCategories.map(async (childCategory) => {
-			const parentId = parents.find(
-				(parent) =>
-					parent.name ===
-					parentCategories.find(
-						(parent) => parent._id === childCategory.parent
-					)?.name
-			)?._id
-			console.log(parentId, 'parentId')
-			return await CategoryModel.create({
-				name: childCategory.name,
-				parent: parentId,
+		// Add new categories
+		const addPromises = categoriesToAdd.map((category) =>
+			CategoryModel.create({
+				name: category.name,
+				parent: category.parent,
 			})
-		})
-		const auxCategories = await Promise.all([
-			...parentCats,
-			...childrenCats,
-		])
-		const actualCategories = auxCategories.map((category) =>
-			category.toObject({ versionKey: false })
 		)
-		console.log(actualCategories)
-		res.status(200).json(actualCategories)
-	} catch (err) {
-		console.log(err)
-		res.status(500).json({ error: 'Eroare la crearea categoriei', err })
+
+		// Delete removed categories
+		const deletePromises = categoriesToDelete.map((id) =>
+			CategoryModel.findByIdAndDelete(id)
+		)
+
+		// Wait for all updates, additions, and deletions to complete
+		await Promise.all([
+			...updatePromises,
+			...addPromises,
+			...deletePromises,
+		])
+
+		// Fetch the updated list of categories
+		const updatedCategories = await CategoryModel.find().lean()
+		res.status(200).json(updatedCategories)
+	} catch (error) {
+		res.status(500).json({
+			error: 'Error updating categories',
+			stack: error,
+		})
 	}
 }
 
@@ -69,9 +114,25 @@ export const getCategories = async (req: IRequest, res: Response) => {
 
 export const getCategory = async (req: IRequest, res: Response) => {
 	try {
+		console.log('getCategorydwwwwwwwwwwwww', req.params.id)
 		const category = await CategoryModel.findById(req.params.id)
-		if (category) {
-			res.json(category)
+		let products
+		if (category && category.parent === null) {
+			products = await productModel
+				.find({ parentCategory: category._id })
+				.select('-__v')
+				.populate('parentCategory')
+				.populate('childCategory')
+		} else if (category && category.parent !== null) {
+			products = await productModel
+				.find({ childCategory: category._id })
+				.select('-__v')
+				.populate('parentCategory')
+				.populate('childCategory')
+		}
+		console.log('products', products)
+		if (category && products) {
+			res.status(200).json(products)
 		} else {
 			res.status(404).json({ message: 'Categoria nu a fost găsită' })
 		}

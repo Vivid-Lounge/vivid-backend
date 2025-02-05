@@ -60,7 +60,7 @@ export const createAccount = async (req: IRequest, res: Response) => {
 export const loginAccount = async (req: IRequest, res: Response) => {
 	try {
 		const { accountUsername, accountPassword } = req.body.credentials
-		console.log(req.body)
+
 		const foundAccount = await AuthModel.findOne({
 			accountUsername,
 		})
