@@ -2,6 +2,7 @@ import { Response, Request } from 'express'
 import ProductModel from '../models/product.model'
 import path from 'path'
 import fs from 'fs'
+import fs_async from 'fs/promises';
 import { IRequest } from 'types'
 import CategoryModel from '../models/category.model'
 export const getProducts = async (req: IRequest, res: Response) => {
@@ -41,7 +42,7 @@ export const createProduct = async (req: Request, res: Response) => {
 			: null
 		console.log('parentCategoryDoc', parentCategoryDoc)
 		console.log('childCategoryDoc', childCategoryDoc)
-		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
+		const imageUrl = `/images/${
 			file.filename
 		}`
 
@@ -77,7 +78,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 		console.log('parentCategoryDoc', parentCategoryDoc)
 		console.log('childCategoryDoc', childCategoryDoc)
 		const imageUrl = file
-			? `${req.protocol}://${req.get('host')}/images/${file.filename}`
+			? `/images/${file.filename}`
 			: product?.imageUrl
 		const updatedProduct = await ProductModel.findByIdAndUpdate(
 			req.params.id,
@@ -116,6 +117,8 @@ export const deleteProduct = async (req: IRequest, res: Response) => {
 		const deletedProduct = await ProductModel.findByIdAndDelete(
 			req.params.id
 		)
+		console.log(path.join(__dirname, `../../public/${deletedProduct?.imageUrl}`));
+		await fs_async.unlink(path.join(__dirname, `../../public/${deletedProduct?.imageUrl}`))
 
 		if (deletedProduct) {
 			res.status(200).json({ message: 'Produs șters cu succes' })
@@ -123,7 +126,7 @@ export const deleteProduct = async (req: IRequest, res: Response) => {
 			res.status(404).json({ message: 'Produsul nu a fost găsit' })
 		}
 	} catch (err) {
-		res.status(500).json({ error: 'Eroare la ștergerea produsului' })
+		res.status(500).json({ error: 'Eroare la ștergerea produsului', msg: err})
 	}
 }
 

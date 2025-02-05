@@ -3,6 +3,7 @@ import { Response } from 'express'
 import EventModel from '../models/event.model'
 import path from 'path'
 import fs, { PathLike } from 'fs'
+import fs_async from 'fs/promises'
 import mongoose, { Path } from 'mongoose'
 export const getEvents = async (req: IRequest, res: Response) => {
 	try {
@@ -57,10 +58,10 @@ export const createEvent = async (req: IRequest, res: Response) => {
 		// }
 		// console.log(uploadDir)
 
-		const posterImage = `${req.protocol}://${req.get('host')}/images/${
+		const posterImage = `/images/${
 			files.posterImage[0].filename
 		}`
-		const coverImage = `${req.protocol}://${req.get('host')}/images/${
+		const coverImage = `/images/${
 			files.coverImage[0].filename
 		}`
 		const newEvent = new EventModel({
@@ -137,12 +138,12 @@ export const updateEvent = async (req: IRequest, res: Response) => {
 
 		// Update image paths if new files uploaded
 		if (files.posterImage) {
-			event.posterImage = `${req.protocol}://${req.get('host')}/images/${
+			event.posterImage = `/images/${
 				files.posterImage[0].filename
 			}`
 		}
 		if (files.coverImage) {
-			event.coverImage = `${req.protocol}://${req.get('host')}/images/${
+			event.coverImage = `/images/${
 				files.coverImage[0].filename
 			}`
 		}
@@ -162,8 +163,19 @@ export const deleteEvents = async (req: IRequest, res: Response) => {
 		const ids = req.body.ids as string[]
 		console.log(req.body, 'req.body')
 		console.log(ids, 'ids')
+		const foundEvents = await EventModel.find({ _id: { $in: ids } })
 		const result = await EventModel.deleteMany({ _id: { $in: ids } })
 		console.log(result, 'result of deleteMany')
+		foundEvents.forEach((e) => {
+			console.log(`../../public${e.posterImage}`)
+			
+			if(fs.existsSync(path.join(__dirname, `../../public/${e?.posterImage}`))){
+				fs.unlinkSync(path.join(__dirname, `../../public/${e?.posterImage}`))
+			}
+			if(fs.existsSync(path.join(__dirname, `../../public/${e?.coverImage}`))){
+				fs.unlinkSync(path.join(__dirname, `../../public/${e?.coverImage}`))
+			}
+		})
 		res.status(200).json({
 			message: `${result.deletedCount} events deleted successfully`,
 			deletedCount: result.deletedCount,
