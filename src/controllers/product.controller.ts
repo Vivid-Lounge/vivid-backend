@@ -5,6 +5,7 @@ import fs from 'fs'
 import fs_async from 'fs/promises'
 import { IRequest } from 'types'
 import CategoryModel from '../models/category.model'
+import { Product } from 'shared/types/Product'
 export const getProducts = async (req: IRequest, res: Response) => {
 	try {
 		const products = await ProductModel.find()
@@ -110,13 +111,16 @@ export const updateProduct = async (req: Request, res: Response) => {
 
 export const deleteProduct = async (req: IRequest, res: Response) => {
 	try {
+		let imageUrl = ((await ProductModel.findById(req.params.id)) as Product)
+			.imageUrl
+		if (!imageUrl) {
+			return res.status(404).json({ message: 'Produsul nu a fost găsit' })
+		}
 		const deletedProduct = await ProductModel.findByIdAndDelete(
 			req.params.id
 		)
 
-		await fs_async.unlink(
-			path.join(__dirname, `../../public/${deletedProduct?.imageUrl}`)
-		)
+		await fs_async.unlink(path.join(__dirname, `../../public/${imageUrl}`))
 
 		if (deletedProduct) {
 			res.status(200).json({ message: 'Produs șters cu succes' })
