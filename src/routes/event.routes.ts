@@ -7,8 +7,8 @@ import {
 } from '../controllers/event.controller'
 import { Router } from 'express'
 import multer from 'multer'
-import { setupUploadDirectories } from '../workers/setupUploadDir'
-const uploadDir = setupUploadDirectories()
+import { setupImagesDirectory } from '../workers/setupUploadDir'
+const uploadDir = setupImagesDirectory()
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
 		cb(null, uploadDir)
