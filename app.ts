@@ -10,6 +10,7 @@ import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import eventRoutes from './src/routes/event.routes'
 import categoriesRoutes from './src/routes/category.routes'
+import galleryRoutes from './src/routes/gallery.routes'
 dotenv.config()
 const app = express()
 const password = encodeURIComponent(`${process.env.MONGODB_PASSWORD}`)
@@ -33,6 +34,8 @@ app.use(
 app.use(cookieParser())
 app.use('/images', express.static(path.join(__dirname, './public/images')))
 app.use('/qrcodes', express.static(path.join(__dirname, './public/qrcodes')))
+app.use('/gallery', express.static(path.join(__dirname, './public/gallery')))
+
 app.get('/api/', (req, res) => {
 	console.log('Hello World!')
 	res.send('Hello World!')
@@ -44,6 +47,7 @@ app.use('/api', [
 	qrRoutes,
 	authRoutes,
 	categoriesRoutes,
+	galleryRoutes,
 ])
 
 app.use(
