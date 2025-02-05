@@ -27,13 +27,7 @@ app.use(express.json())
 app.use(
 	cors({
 		credentials: true,
-		origin: [
-			'http://192.168.0.101:3001',
-			'http://localhost:5173',
-			'http://localhost:5174',
-			'http://localhost:3001',
-			'http://192.168.1.203:3001',
-		],
+		origin: true,
 	})
 )
 app.use(cookieParser())
@@ -66,6 +60,6 @@ app.use(
 
 const PORT = 4000
 
-app.listen(PORT, '192.168.1.203', () => {
+app.listen(PORT, () => {
 	console.log(`Server is running on port ${PORT}`)
 })

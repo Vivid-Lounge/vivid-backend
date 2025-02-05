@@ -10,6 +10,7 @@ export const getProducts = async (req: IRequest, res: Response) => {
 			.select('-__v')
 			.populate('parentCategory')
 			.populate('childCategory')
+
 		res.json(products)
 	} catch (err) {
 		res.status(500).json({ error: 'Eroare la obținerea produselor' })
@@ -19,6 +20,7 @@ export const getProducts = async (req: IRequest, res: Response) => {
 export const getProduct = async (req: IRequest, res: Response) => {
 	try {
 		const product = await ProductModel.findById(req.params.id)
+
 		if (product) {
 			res.json(product)
 		} else {
@@ -39,11 +41,8 @@ export const createProduct = async (req: Request, res: Response) => {
 		const childCategoryDoc = childId
 			? await CategoryModel.findById(childId)
 			: null
-		console.log('parentCategoryDoc', parentCategoryDoc)
-		console.log('childCategoryDoc', childCategoryDoc)
-		const imageUrl = `${req.protocol}://${req.get('host')}/images/${
-			file.filename
-		}`
+
+		const imageUrl = `/images/${file.filename}`
 
 		const newProduct = new ProductModel({
 			name,
@@ -69,16 +68,12 @@ export const updateProduct = async (req: Request, res: Response) => {
 		const { name, description, price, quantityInGrams, parentId, childId } =
 			req.body
 		const file = req.file as Express.Multer.File
-		console.log(file)
-		console.log(req.body)
+
 		const product = await ProductModel.findById(req.params.id)
 		const parentCategoryDoc = await CategoryModel.findById(parentId)
 		const childCategoryDoc = await CategoryModel.findById(childId)
-		console.log('parentCategoryDoc', parentCategoryDoc)
-		console.log('childCategoryDoc', childCategoryDoc)
-		const imageUrl = file
-			? `${req.protocol}://${req.get('host')}/images/${file.filename}`
-			: product?.imageUrl
+
+		const imageUrl = file ? `/images/${file.filename}` : product?.imageUrl
 		const updatedProduct = await ProductModel.findByIdAndUpdate(
 			req.params.id,
 			{
@@ -135,7 +130,10 @@ export const toggleProductVisibility = async (req: IRequest, res: Response) => {
 				req.params.id,
 				{ isVisible: !product.isVisible },
 				{ new: true }
-			).select('-__v')
+			)
+				.select('-__v')
+				.populate('parentCategory')
+				.populate('childCategory')
 			res.status(200).json(updatedProduct)
 		} else {
 			res.status(404).json({ message: 'Produsul nu a fost găsit' })
