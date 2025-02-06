@@ -5,9 +5,10 @@ import productModel from '../models/product.model'
 
 import CategoryModel from '../models/category.model'
 import { Request } from 'express'
+import mongoose from 'mongoose'
 interface ICategory {
 	name: string
-	parent: string | null
+	parent: string | null | mongoose.Schema.Types.ObjectId
 	_id: string
 }
 export const updateCategories = async (req: Request, res: Response) => {
@@ -24,6 +25,9 @@ export const updateCategories = async (req: Request, res: Response) => {
 		const categoriesToAdd = [] as Array<ICategory>
 		const categoriesToLeaveUnchanged = [] as Array<ICategory>
 		const categoriesToDelete = [] as string[]
+		const newCategories = submittedCategories.filter(
+			(category) => !mongoose.Types.ObjectId.isValid(category._id)
+		)
 
 		submittedCategories.forEach((submittedCategory) => {
 			const existingCategory = existingCategories.find(
@@ -41,7 +45,8 @@ export const updateCategories = async (req: Request, res: Response) => {
 					categoriesToLeaveUnchanged.push(submittedCategory)
 				}
 			} else {
-				categoriesToAdd.push(submittedCategory)
+				const auxCategoryToAdd = submittedCategory
+				categoriesToAdd.push(auxCategoryToAdd)
 			}
 		})
 
@@ -69,30 +74,51 @@ export const updateCategories = async (req: Request, res: Response) => {
 			})
 		)
 
-		// Add new categories
-		const addPromises = categoriesToAdd.map((category) =>
-			CategoryModel.create({
-				name: category.name,
-				parent: category.parent,
+		if (categoriesToAdd.length > 0) {
+			const parentCategories = categoriesToAdd
+				.filter((cat) => cat.parent === null)
+				.map((category) =>
+					CategoryModel.create({
+						name: category.name,
+						parent: null,
+					})
+				)
+			// console.log(parentCategories, 'parentCategories')
+			const parentCategoriesDocs = await Promise.all(parentCategories)
+			const parentCategoriesIds = parentCategoriesDocs.map((category) =>
+				category.toObject({ versionKey: false })
+			)
+			console.log(parentCategoriesDocs, 'parentCategoriesDocs')
+			const parentCategoriesToAddFromBody = categoriesToAdd.filter(
+				(category) => category.parent === null
+			)
+			const childCategoriesToAddFromBody = categoriesToAdd.filter(
+				(category) => category.parent !== null
+			)
+			parentCategoriesToAddFromBody.forEach((parentFromBody, index) => {
+				childCategoriesToAddFromBody.forEach(async (child) => {
+					if (parentFromBody._id === child.parent) {
+						await CategoryModel.create({
+							name: child.name,
+							parent: parentCategoriesIds[index],
+						})
+					}
+				})
 			})
-		)
-
+		}
 		// Delete removed categories
 		const deletePromises = categoriesToDelete.map((id) =>
 			CategoryModel.findByIdAndDelete(id)
 		)
 
 		// Wait for all updates, additions, and deletions to complete
-		await Promise.all([
-			...updatePromises,
-			...addPromises,
-			...deletePromises,
-		])
+		await Promise.all([...updatePromises, ...deletePromises])
 
 		// Fetch the updated list of categories
 		const updatedCategories = await CategoryModel.find().lean()
 		res.status(200).json(updatedCategories)
 	} catch (error) {
+		console.log(error, 'error')
 		res.status(500).json({
 			error: 'Error updating categories',
 			stack: error,
