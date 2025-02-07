@@ -35,7 +35,7 @@ const upload = multer({
 }) 
 const router = Router()
 
-router.get('/gallery', authMiddleware, getGallery)
+router.get('/gallery', getGallery)
 router.post('/gallery', 
     authMiddleware, 
     upload.fields([
@@ -46,6 +46,6 @@ router.post('/gallery',
     ]),
     insertImages)
 router.put('/gallery', authMiddleware, updateGallery)
-router.delete('/gallery', authMiddleware, deleteImage);
+router.put('/deleteImage', authMiddleware, deleteImage);
 
 export default router

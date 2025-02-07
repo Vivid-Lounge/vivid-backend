@@ -119,13 +119,8 @@ export const deleteProduct = async (req: IRequest, res: Response) => {
 		const deletedProduct = await ProductModel.findByIdAndDelete(
 			req.params.id
 		)
-<<<<<<< HEAD
-		
-		await fs_async.unlink(path.join(__dirname, `../../public/${deletedProduct?.imageUrl}`))
-=======
 
 		await fs_async.unlink(path.join(__dirname, `../../public/${imageUrl}`))
->>>>>>> c221a4f3ba024d8abfb2eadaa11444e665e3991c
 
 		if (deletedProduct) {
 			res.status(200).json({ message: 'Produs șters cu succes' })
