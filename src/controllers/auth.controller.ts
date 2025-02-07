@@ -59,6 +59,7 @@ export const createAccount = async (req: IRequest, res: Response) => {
 
 export const loginAccount = async (req: IRequest, res: Response) => {
 	try {
+		console.log(req.body)
 		const { accountUsername, accountPassword } = req.body.credentials
 
 		const foundAccount = await AuthModel.findOne({
@@ -66,7 +67,7 @@ export const loginAccount = async (req: IRequest, res: Response) => {
 		})
 
 		if (foundAccount == null) {
-			res.status(403).json('Acest cont nu exista!')
+			res.status(403).json('Cont sau parola incorecta!')
 			return
 		}
 		const hashedPassword = crypto
@@ -75,7 +76,7 @@ export const loginAccount = async (req: IRequest, res: Response) => {
 			.digest('hex')
 
 		if (foundAccount.accountPassword != hashedPassword) {
-			res.status(403).json('Parola este incorecta!')
+			res.status(403).json({ message: 'Cont sau parola incorecta!' })
 			return
 		}
 
@@ -94,6 +95,8 @@ export const loginAccount = async (req: IRequest, res: Response) => {
 			tokenSecret,
 			{
 				expiresIn: '24h',
+				issuer: process.env.API_URI,
+				audience: process.env.CLIENT_ISSUER_URI,
 			},
 			async (err, token) => {
 				if (err) throw err

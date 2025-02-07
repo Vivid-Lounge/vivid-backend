@@ -7,7 +7,7 @@ export const ensureClientVeridicity = (
 	next: NextFunction
 ) => {
 	try {
-		console.log('initialAuthMiddleware')
+		console.log('we in ensure client veridicity')
 		const token = getBearerToken(req)
 		console.log(token, 'clienttoken')
 		if (!token) {
@@ -22,10 +22,22 @@ export const ensureClientVeridicity = (
 				if (err) {
 					return res
 						.status(401)
-						.json({ message: 'Access denied at jwt verify', err })
+						.json({
+							message:
+								'Access denied at jwt verify ensure client veridicity',
+							err,
+						})
 				} else {
-					console.log('client verified with decoded', decoded)
-					next()
+					if (
+						decoded.iss === process.env.CLIENT_ISSUER_URI &&
+						decoded.aud === process.env.API_URI
+					) {
+						next()
+					} else
+						return res.status(401).json({
+							message:
+								'access forbidden. owner has been contacted',
+						})
 				}
 			}
 		)

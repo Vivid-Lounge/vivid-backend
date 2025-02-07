@@ -30,8 +30,15 @@ export const authMiddleware = async (
 					})
 				}
 				req.user = decoded as User
-				next()
-				// next()
+				console.log('decoded token at auth middleware', decoded)
+				if (
+					(decoded.iss =
+						process.env.API_URI &&
+						decoded.aud === process.env.CLIENT_ISSUER_URI)
+				) {
+					console.log('access granted')
+					next()
+				}
 			}
 		)
 	} catch (error) {
