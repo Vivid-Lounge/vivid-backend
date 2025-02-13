@@ -12,15 +12,9 @@ import { authMiddleware, isAdminMiddleware } from '../workers/middlewares'
 const router = Router()
 
 router.get('/qr', authMiddleware, getQRCodes)
-router.delete('/qr', authMiddleware, isAdminMiddleware, deleteAllQRCodes)
-router.get('/qr/:id', authMiddleware, isAdminMiddleware, getQRCode)
-router.delete('/qr/:id', authMiddleware, isAdminMiddleware, deleteQRCode)
-router.post(
-	'/qr',
-	[body('numTables')],
-	authMiddleware,
-	isAdminMiddleware,
-	generateQR
-)
+router.delete('/qr', authMiddleware, deleteAllQRCodes)
+router.get('/qr/:id', authMiddleware, getQRCode)
+router.delete('/qr/:id', authMiddleware, deleteQRCode)
+router.post('/qr', [body('numTables')], authMiddleware, generateQR)
 
 export default router

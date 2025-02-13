@@ -37,7 +37,7 @@ export const generateQR = async (req: IRequest, res: Response) => {
 
 			const qrImage = await Jimp.Jimp.read(qrBuffer)
 
-			const logoPath = path.join(__dirname, '../public/logo/logo.png')
+			const logoPath = path.join(__dirname, '../../public/logo/logo.png')
 			const logoImage = await Jimp.Jimp.read(logoPath)
 
 			const qrWidth = qrImage.bitmap.width
@@ -62,7 +62,7 @@ export const generateQR = async (req: IRequest, res: Response) => {
 				.split('/')
 				.pop()}___${randomUUID}.png`
 
-			const folderPath = path.join(__dirname, '../public/qrcodes')
+			const folderPath = path.join(__dirname, '../../public/qrcodes')
 
 			await fs_async.mkdir(folderPath, { recursive: true })
 
@@ -73,7 +73,7 @@ export const generateQR = async (req: IRequest, res: Response) => {
 			const newQRCode = new QRModel({
 				tableUrl,
 				tableNumber,
-				imageUrl,
+				imageUrl: imageUrl,
 			})
 
 			newQRCodes.push(newQRCode)
@@ -84,6 +84,7 @@ export const generateQR = async (req: IRequest, res: Response) => {
 		console.log(newQRCodes)
 		res.status(200).json(newQRCodes)
 	} catch (err) {
+		console.log(err)
 		console.error('Eroare la generarea codului QR:', err)
 		res.status(500).json({ error: 'Eroare la generarea codului QR' })
 	}
@@ -105,13 +106,15 @@ export const deleteQRCode = async (req: IRequest, res: Response) => {
 			await orderModel.deleteMany({
 				tableNumber: qrCode.tableUrl.split('/')[5],
 			})
-			await QRModel.findByIdAndDelete(req.params.id)
+			const deleted = await QRModel.findByIdAndDelete(req.params.id)
+
 			const filePath = path.join(
 				__dirname,
-				'../public/qrcodes',
+				'../../public/qrcodes',
 				qrCode.imageUrl
 			)
-			fs.unlinkSync(filePath)
+
+			await fs_async.unlink(filePath)
 			res.status(200).json({ message: 'Codul QR a fost șters' })
 		} else {
 			res.status(404).json({ message: 'Codul QR nu a fost găsit' })
@@ -123,13 +126,14 @@ export const deleteQRCode = async (req: IRequest, res: Response) => {
 export const deleteAllQRCodes = async (req: IRequest, res: Response) => {
 	try {
 		const qrCodes = await QRModel.find()
-		if (qrCodes) {
+		if (qrCodes.length > 0) {
 			await QRModel.deleteMany({})
 			await orderModel.deleteMany({})
-			const folderPath = path.join(__dirname, '../public/qrcodes')
-			const files = fs.readdirSync(folderPath)
+			const folderPath = path.join(__dirname, '../../public/qrcodes')
+			const files = await fs_async.readdir(folderPath)
 			for (const file of files) {
-				fs.unlinkSync(path.join(folderPath, file))
+				console.log(path.join(folderPath, file))
+				await fs_async.unlink(path.join(folderPath, file))
 			}
 			res.status(200).json({
 				message: 'Toate codurile QR au fost șterse',

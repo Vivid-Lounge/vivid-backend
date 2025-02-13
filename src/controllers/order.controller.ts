@@ -198,3 +198,13 @@ export const getOrdersByTable = async (req: IRequest, res: Response) => {
 		res.status(500).json({ error: 'Eroare la obținerea comenzilor' })
 	}
 }
+
+export const handleTableOrder = async (req: IRequest, res: Response) => {
+	try {
+	} catch (e) {
+		console.log(e)
+		return res
+			.status(500)
+			.json({ error: 'Eroare la actualizarea comenzii' })
+	}
+}

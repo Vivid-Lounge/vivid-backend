@@ -6,6 +6,7 @@ import fs_async from 'fs/promises'
 import { IRequest } from 'types'
 import CategoryModel from '../models/category.model'
 import { Product } from 'shared/types/Product'
+
 export const getProducts = async (req: IRequest, res: Response) => {
 	try {
 		const products = await ProductModel.find()
@@ -45,7 +46,14 @@ export const createProduct = async (req: Request, res: Response) => {
 			: null
 		console.log('parentCategoryDoc', parentCategoryDoc)
 		console.log('childCategoryDoc', childCategoryDoc)
-		const imageUrl = `/images/${file.filename}`
+
+		const processedImagePath = path.join(
+			__dirname,
+			`../../public/images/${file.originalname}`
+		)
+		await fs_async.writeFile(processedImagePath, file.buffer)
+
+		const imageUrl = `/images/${file.originalname}`
 
 		const newProduct = new ProductModel({
 			name,
@@ -59,6 +67,7 @@ export const createProduct = async (req: Request, res: Response) => {
 
 		const savedProduct = await newProduct.save()
 		const actualProduct = savedProduct.toObject({ versionKey: false })
+
 		res.status(200).json(actualProduct)
 	} catch (err) {
 		console.log(err)
@@ -76,7 +85,17 @@ export const updateProduct = async (req: Request, res: Response) => {
 		const parentCategoryDoc = await CategoryModel.findById(parentId)
 		const childCategoryDoc = await CategoryModel.findById(childId)
 
-		const imageUrl = file ? `/images/${file.filename}` : product?.imageUrl
+		let imageUrl = product?.imageUrl
+		if (file) {
+			const processedImagePath = path.join(
+				__dirname,
+				`../../public/images/${file.originalname}`
+			)
+			await fs_async.writeFile(processedImagePath, file.buffer)
+
+			imageUrl = `/images/${file.originalname}`
+		}
+
 		const updatedProduct = await ProductModel.findByIdAndUpdate(
 			req.params.id,
 			{
@@ -95,6 +114,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 			.select('-__v')
 			.populate('parentCategory')
 			.populate('childCategory')
+
 		if (updatedProduct) {
 			res.json(updatedProduct)
 		} else {
@@ -132,6 +152,31 @@ export const deleteProduct = async (req: IRequest, res: Response) => {
 			error: 'Eroare la ștergerea produsului',
 			msg: err,
 		})
+	}
+}
+
+export const deleteAllProducts = async (req: IRequest, res: Response) => {
+	try {
+		const products = await ProductModel.find()
+		if (products.length > 0) {
+			// Delete all products from the database
+			await ProductModel.deleteMany({})
+
+			// Delete all files from the /public/images directory
+			const folderPath = path.join(__dirname, '../../public/images')
+			const files = await fs_async.readdir(folderPath)
+			for (const file of files) {
+				await fs_async.unlink(path.join(folderPath, file))
+			}
+
+			res.status(200).json({
+				message: 'Toate produsele au fost șterse',
+			})
+		} else {
+			res.status(404).json({ message: 'Produsele nu au fost găsite' })
+		}
+	} catch (err) {
+		res.status(500).json({ error: 'Eroare la ștergerea produselor' })
 	}
 }
 

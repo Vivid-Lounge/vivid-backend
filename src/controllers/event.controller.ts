@@ -2,9 +2,10 @@ import { IRequest } from 'types'
 import { Response } from 'express'
 import EventModel from '../models/event.model'
 import path from 'path'
-import fs, { PathLike } from 'fs'
+import fs from 'fs'
 import fs_async from 'fs/promises'
-import mongoose, { Path } from 'mongoose'
+import mongoose from 'mongoose'
+
 export const getEvents = async (req: IRequest, res: Response) => {
 	try {
 		const events = await EventModel.find()
@@ -51,19 +52,21 @@ export const createEvent = async (req: IRequest, res: Response) => {
 
 		const slug = title ? title.toLowerCase().replace(/ /g, '-') : date
 
-		// // Ensure upload directory exists
-		// const uploadDir = path.join(process.cwd(), 'public', 'images', 'events')
-		// if (!fs.existsSync(uploadDir)) {
-		// 	fs.mkdirSync(uploadDir, { recursive: true })
-		// }
-		// console.log(uploadDir)
+		const posterImagePath = path.join(
+			__dirname,
+			`../../public/images/${files.posterImage[0].originalname}`
+		)
+		await fs_async.writeFile(posterImagePath, files.posterImage[0].buffer)
 
-		const posterImage = `/images/${
-			files.posterImage[0].filename
-		}`
-		const coverImage = `/images/${
-			files.coverImage[0].filename
-		}`
+		const coverImagePath = path.join(
+			__dirname,
+			`../../public/images/${files.coverImage[0].originalname}`
+		)
+		await fs_async.writeFile(coverImagePath, files.coverImage[0].buffer)
+
+		const posterImage = `/images/${files.posterImage[0].originalname}`
+		const coverImage = `/images/${files.coverImage[0].originalname}`
+
 		const newEvent = new EventModel({
 			title,
 			posterImage,
@@ -103,7 +106,6 @@ export const updateEvent = async (req: IRequest, res: Response) => {
 					process.cwd(),
 					'public',
 					'images',
-					'events',
 					oldPosterPath
 				)
 				if (fs.existsSync(fullOldPosterPath)) {
@@ -119,7 +121,6 @@ export const updateEvent = async (req: IRequest, res: Response) => {
 					process.cwd(),
 					'public',
 					'images',
-					'events',
 					oldCoverPath
 				)
 				if (fs.existsSync(fullOldCoverPath)) {
@@ -138,14 +139,23 @@ export const updateEvent = async (req: IRequest, res: Response) => {
 
 		// Update image paths if new files uploaded
 		if (files.posterImage) {
-			event.posterImage = `/images/${
-				files.posterImage[0].filename
-			}`
+			const posterImagePath = path.join(
+				__dirname,
+				`../../public/images/${files.posterImage[0].originalname}`
+			)
+			await fs_async.writeFile(
+				posterImagePath,
+				files.posterImage[0].buffer
+			)
+			event.posterImage = `/images/${files.posterImage[0].originalname}`
 		}
 		if (files.coverImage) {
-			event.coverImage = `/images/${
-				files.coverImage[0].filename
-			}`
+			const coverImagePath = path.join(
+				__dirname,
+				`../../public/images/${files.coverImage[0].originalname}`
+			)
+			await fs_async.writeFile(coverImagePath, files.coverImage[0].buffer)
+			event.coverImage = `/images/${files.coverImage[0].originalname}`
 		}
 
 		const updatedEvent = await event.save()
@@ -161,19 +171,31 @@ export const updateEvent = async (req: IRequest, res: Response) => {
 export const deleteEvents = async (req: IRequest, res: Response) => {
 	try {
 		const ids = req.body.ids as string[]
-		console.log(req.body, 'req.body')
-		console.log(ids, 'ids')
+		console.log(req.body)
+		console.log(ids)
 		const foundEvents = await EventModel.find({ _id: { $in: ids } })
 		const result = await EventModel.deleteMany({ _id: { $in: ids } })
-		console.log(result, 'result of deleteMany')
+		console.log(result)
 		foundEvents.forEach((e) => {
 			console.log(`../../public${e.posterImage}`)
-			
-			if(fs.existsSync(path.join(__dirname, `../../public/${e?.posterImage}`))){
-				fs.unlinkSync(path.join(__dirname, `../../public/${e?.posterImage}`))
+
+			if (
+				fs.existsSync(
+					path.join(__dirname, `../../public/${e?.posterImage}`)
+				)
+			) {
+				fs.unlinkSync(
+					path.join(__dirname, `../../public/${e?.posterImage}`)
+				)
 			}
-			if(fs.existsSync(path.join(__dirname, `../../public/${e?.coverImage}`))){
-				fs.unlinkSync(path.join(__dirname, `../../public/${e?.coverImage}`))
+			if (
+				fs.existsSync(
+					path.join(__dirname, `../../public/${e?.coverImage}`)
+				)
+			) {
+				fs.unlinkSync(
+					path.join(__dirname, `../../public/${e?.coverImage}`)
+				)
 			}
 		})
 		res.status(200).json({

@@ -20,17 +20,20 @@ export const ensureClientVeridicity = (
 			process.env.CLIENT_JWT_SECRET as string,
 			(err: any, decoded: any) => {
 				if (err) {
-					return res
-						.status(401)
-						.json({
-							message:
-								'Access denied at jwt verify ensure client veridicity',
-							err,
-						})
+					return res.status(401).json({
+						message:
+							'Access denied at jwt verify ensure client veridicity',
+						err,
+					})
 				} else {
+					console.log(
+						'decoded token at ensure client veridicity',
+						decoded
+					)
 					if (
-						decoded.iss === process.env.CLIENT_ISSUER_URI &&
-						decoded.aud === process.env.API_URI
+						decoded.iss ===
+							(process.env.CLIENT_ISSUER_URI as string) &&
+						decoded.aud === (process.env.API_URI as string)
 					) {
 						next()
 					} else

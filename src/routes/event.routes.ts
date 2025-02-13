@@ -8,17 +8,16 @@ import {
 import { Router } from 'express'
 import multer from 'multer'
 import { setupImagesDirectory } from '../workers/setupUploadDir'
+import { compressImage } from '../workers/middlewares'
+
 const uploadDir = setupImagesDirectory()
-const storage = multer.diskStorage({
-	destination: (req, file, cb) => {
-		cb(null, uploadDir)
-	},
-	filename: (req, file, cb) => {
-		cb(null, `${file.fieldname}-${Date.now()}-${file.originalname}`)
-	},
-})
+const storage = multer.memoryStorage() // Use memory storage for multer
+
 const upload = multer({
 	storage,
+	// limits: {
+	// 	fileSize: 5 * 1024 * 1024, // limit file size to 5MB
+	// },
 	fileFilter: (req, file, cb) => {
 		if (
 			file.fieldname === 'posterImage' ||
@@ -34,36 +33,26 @@ const upload = multer({
 const router = Router()
 
 router.get('/events', getEvents)
-
 router.get('/events/:slug', getEvent)
 router.patch('/events', deleteEvents)
+
 router.post(
 	'/events',
 	upload.fields([
-		{
-			name: 'posterImage',
-			maxCount: 1,
-		},
-		{
-			name: 'coverImage',
-			maxCount: 1,
-		},
+		{ name: 'posterImage', maxCount: 1 },
+		{ name: 'coverImage', maxCount: 1 },
 	]),
+	compressImage,
 	createEvent
 )
 
 router.put(
 	'/events/:id',
 	upload.fields([
-		{
-			name: 'posterImage',
-			maxCount: 1,
-		},
-		{
-			name: 'coverImage',
-			maxCount: 1,
-		},
+		{ name: 'posterImage', maxCount: 1 },
+		{ name: 'coverImage', maxCount: 1 },
 	]),
+	compressImage,
 	updateEvent
 )
 
