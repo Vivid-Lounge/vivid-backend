@@ -16,9 +16,7 @@ const storage = multer.memoryStorage() // Use memory storage for multer
 
 const upload = multer({
 	storage,
-	limits: {
-		fileSize: 50 * 1024 * 1024, // limit file size to 5MB
-	},
+	limits: { fileSize: Infinity },
 	fileFilter: (req, file, cb) => {
 		if (file.fieldname === 'images') {
 			cb(null, true)

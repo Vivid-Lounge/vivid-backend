@@ -10,54 +10,55 @@ interface ICategory {
 	name: string
 	parent: string | null | mongoose.Schema.Types.ObjectId
 	_id: string
-}
+} // adjust import path
+
 export const updateCategories = async (req: Request, res: Response) => {
 	try {
 		const submittedCategories = req.body.categories as Array<ICategory>
-
 		console.log(submittedCategories, 'submittedCategories')
 
 		// Fetch existing categories from the database
 		const existingCategories = await CategoryModel.find().lean()
 
-		// Determine categories to update, add, leave unchanged, and delete
-		const categoriesToUpdate = [] as Array<ICategory>
-		const categoriesToAdd = [] as Array<ICategory>
-		const categoriesToLeaveUnchanged = [] as Array<ICategory>
-		const categoriesToDelete = [] as string[]
-		const newCategories = submittedCategories.filter(
-			(category) => !mongoose.Types.ObjectId.isValid(category._id)
-		)
+		// Arrays to track different operations
+		const categoriesToUpdate: ICategory[] = []
+		const categoriesToAdd: ICategory[] = []
+		const categoriesToLeaveUnchanged: ICategory[] = []
+		const categoriesToDelete: string[] = []
 
+		// 1) Figure out which categories are updates vs. new vs. unchanged
 		submittedCategories.forEach((submittedCategory) => {
 			const existingCategory = existingCategories.find(
-				(category) => category._id.toString() === submittedCategory._id
+				(cat) => cat._id.toString() === submittedCategory._id
 			)
 
 			if (existingCategory) {
+				// If category name or parent changed, schedule an update
+				const parentIdAsString = existingCategory.parent
+					? existingCategory.parent.toString()
+					: null
 				if (
 					existingCategory.name !== submittedCategory.name ||
-					existingCategory.parent?.toString() !==
-						submittedCategory.parent
+					parentIdAsString !== submittedCategory.parent
 				) {
 					categoriesToUpdate.push(submittedCategory)
 				} else {
 					categoriesToLeaveUnchanged.push(submittedCategory)
 				}
 			} else {
-				const auxCategoryToAdd = submittedCategory
-				categoriesToAdd.push(auxCategoryToAdd)
+				// Not found in existing categories => new category
+				categoriesToAdd.push(submittedCategory)
 			}
 		})
 
+		// 2) Determine which existing categories are missing from submitted => delete
 		existingCategories.forEach((existingCategory) => {
-			const isDeleted = !submittedCategories.find(
+			const stillExists = submittedCategories.find(
 				(submittedCategory) =>
 					submittedCategory._id === existingCategory._id.toString()
 			)
-
-			if (isDeleted) {
-				categoriesToDelete.push(existingCategory._id)
+			if (!stillExists) {
+				categoriesToDelete.push(existingCategory._id.toString())
 			}
 		})
 
@@ -66,7 +67,7 @@ export const updateCategories = async (req: Request, res: Response) => {
 		console.log(categoriesToLeaveUnchanged, 'categoriesToLeaveUnchanged')
 		console.log(categoriesToDelete, 'categoriesToDelete')
 
-		// Update categories
+		// 3) Update categories (name/parent changes only)
 		const updatePromises = categoriesToUpdate.map((category) =>
 			CategoryModel.findByIdAndUpdate(category._id, {
 				name: category.name,
@@ -74,47 +75,79 @@ export const updateCategories = async (req: Request, res: Response) => {
 			})
 		)
 
+		// 4) Create new categories
+		//    We need to handle both top-level categories (parent === null or invalid)
+		//    and children that might point to existing parents or newly created parents.
+		const creationPromises: Promise<any>[] = []
 		if (categoriesToAdd.length > 0) {
-			const parentCategories = categoriesToAdd
-				.filter((cat) => cat.parent === null)
-				.map((category) =>
+			// A) First, find all categories that have no valid parent ID => treat them as "new parents"
+			const newParents = categoriesToAdd.filter(
+				(cat) =>
+					!cat.parent ||
+					!mongoose.Types.ObjectId.isValid(cat.parent.toString())
+			)
+
+			// B) Create these "new parent" categories
+			const createdParentDocs = await Promise.all(
+				newParents.map((cat) =>
 					CategoryModel.create({
-						name: category.name,
+						name: cat.name,
 						parent: null,
 					})
 				)
-			// console.log(parentCategories, 'parentCategories')
-			const parentCategoriesDocs = await Promise.all(parentCategories)
-			const parentCategoriesIds = parentCategoriesDocs.map((category) =>
-				category.toObject({ versionKey: false })
 			)
-			console.log(parentCategoriesDocs, 'parentCategoriesDocs')
-			const parentCategoriesToAddFromBody = categoriesToAdd.filter(
-				(category) => category.parent === null
-			)
-			const childCategoriesToAddFromBody = categoriesToAdd.filter(
-				(category) => category.parent !== null
-			)
-			parentCategoriesToAddFromBody.forEach((parentFromBody, index) => {
-				childCategoriesToAddFromBody.forEach(async (child) => {
-					if (parentFromBody._id === child.parent) {
-						await CategoryModel.create({
-							name: child.name,
-							parent: parentCategoriesIds[index],
-						})
-					}
-				})
+
+			// C) Map the temporary (frontend) _id to the newly created _id
+			const localIdMap: Record<string, string> = {}
+			newParents.forEach((cat, idx) => {
+				localIdMap[cat._id] = createdParentDocs[idx]._id.toString()
 			})
+
+			// D) Now create all other categories that remain to be added (children),
+			//    including those that have an *existing* parent in the DB or a newly created parent.
+			for (const cat of categoriesToAdd) {
+				// If we already created it as a parent in step (B), skip
+				if (localIdMap[cat._id]) {
+					continue
+				}
+
+				let parentId: string | null = null
+
+				// If cat.parent is a valid Mongo ObjectId, then the parent is an existing category
+				if (
+					cat.parent &&
+					mongoose.Types.ObjectId.isValid(cat.parent.toString())
+				) {
+					parentId = cat.parent.toString()
+				}
+				// Otherwise, if cat.parent is one of our "new parents" we just created
+				else if (cat.parent && localIdMap[cat.parent.toString()]) {
+					parentId = localIdMap[cat.parent.toString()]
+				}
+
+				// Create the category
+				creationPromises.push(
+					CategoryModel.create({
+						name: cat.name,
+						parent: parentId,
+					})
+				)
+			}
 		}
-		// Delete removed categories
+
+		// 5) Delete categories that were removed
 		const deletePromises = categoriesToDelete.map((id) =>
 			CategoryModel.findByIdAndDelete(id)
 		)
 
-		// Wait for all updates, additions, and deletions to complete
-		await Promise.all([...updatePromises, ...deletePromises])
+		// 6) Wait for all updates, creations, and deletions
+		await Promise.all([
+			...updatePromises,
+			...creationPromises,
+			...deletePromises,
+		])
 
-		// Fetch the updated list of categories
+		// 7) Return the updated list of categories
 		const updatedCategories = await CategoryModel.find().lean()
 		res.status(200).json(updatedCategories)
 	} catch (error) {
