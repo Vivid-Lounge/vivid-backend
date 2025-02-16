@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import mongoose from 'mongoose'
 import path from 'path'
+import bodyParser from 'body-parser'
 import productRoutes from './src/routes/product.routes'
 import orderRoutes from './src/routes/order.routes'
 import qrRoutes from './src/routes/qr.routes'
@@ -27,6 +28,8 @@ mongoose
 // mongoose.connect('127.0.0.1')
 
 app.use(express.json())
+app.use(bodyParser.json({ limit: '50mb' }))
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
 app.use(
 	cors({
 		credentials: true,
