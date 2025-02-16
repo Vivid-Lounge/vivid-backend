@@ -7,19 +7,20 @@ export const ensureClientVeridicity = (
 	next: NextFunction
 ) => {
 	try {
-		console.log('we in ensure client veridicity')
 		const token = getBearerToken(req)
-		console.log(token, 'clienttoken')
+		console.log('token at ensure client veridicity', token)
 		if (!token) {
 			return res
 				.status(401)
 				.json({ message: 'Access denied at client token' })
 		}
+		console.log('token at ensure client veridicity', token)
 		jwt.verify(
 			token,
 			process.env.CLIENT_JWT_SECRET as string,
 			(err: any, decoded: any) => {
 				if (err) {
+					console.log(err)
 					return res.status(401).json({
 						message:
 							'Access denied at jwt verify ensure client veridicity',

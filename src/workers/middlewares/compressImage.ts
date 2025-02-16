@@ -39,8 +39,10 @@ export const compressImage = async (
 			for (const fieldname in files) {
 				for (const file of files[fieldname]) {
 					const { buffer, originalname } = file
-					const timestamp = Date.now()
-					const ref = `${timestamp}-${originalname}`
+					const sanitizedOriginalName = originalname
+						.replace(/\s+/g, '_')
+						.replace(/[^a-zA-Z0-9._-]/g, '')
+					const ref = sanitizedOriginalName.replace(/\.[^/.]+$/, '')
 
 					const compressedImage = await sharp(buffer)
 						.resize({

@@ -44,7 +44,7 @@ router.post(
 			.withMessage('Permisiunile acordate utilizatorului sunt invalide!'),
 	],
 	ensureClientVeridicity,
-	// authMiddleware,
+	authMiddleware,
 
 	createAccount
 )

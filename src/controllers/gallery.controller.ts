@@ -29,26 +29,56 @@ export const insertImages = async (req: IRequest, res: Response) => {
 			return res.status(500).json({ error: 'Nu s-au primit imagini!' })
 		}
 
-		for (const file of files.images) {
-			const imagePath = path.join(
-				__dirname,
-				`../../public/gallery/${file.originalname}`
-			)
-			await fs_async.writeFile(imagePath, file.buffer)
+		const chunkSize = 3
+		for (let i = 0; i < files.images.length; i += chunkSize) {
+			const chunk = files.images.slice(i, i + chunkSize)
+			await Promise.all(
+				chunk.map(async (file) => {
+					try {
+						const imagePath = path.join(
+							__dirname,
+							`../../public/gallery/${file.originalname}`
+						)
 
-			const newImage = new ImageModel({
-				imageUrl: file.originalname,
-				priority: 1,
-			})
-			gallery.imageArray.push(newImage)
+						const maxRetries = 3
+						let retries = 0
+						while (retries < maxRetries) {
+							try {
+								await fs_async.writeFile(imagePath, file.buffer)
+								break
+							} catch (writeError) {
+								retries++
+								if (retries === maxRetries) throw writeError
+								// Wait before retrying
+								await new Promise((resolve) =>
+									setTimeout(resolve, 1000)
+								)
+							}
+						}
+
+						const newImage = new ImageModel({
+							imageUrl: file.originalname,
+							priority: 1,
+						})
+						gallery.imageArray.push(newImage)
+					} catch (fileError) {
+						console.error(
+							`Error processing file ${file.originalname}:`,
+							fileError
+						)
+						// Continue with other files if one fails
+					}
+				})
+			)
 		}
+
 		const savedGallery = await gallery.save()
 		res.json(savedGallery.toObject({ versionKey: false }))
 	} catch (err) {
-		console.log(err)
+		console.error('Error in insertImages:', err)
 		res.status(500).json({
 			error: 'Eroare la inserarea imaginii',
-			msg: err,
+			msg: err instanceof Error ? err.message : 'Unknown error',
 		})
 	}
 }

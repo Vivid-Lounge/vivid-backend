@@ -8,9 +8,7 @@ export const authMiddleware = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	console.log('authMiddleware')
 	const token = getBearerToken(req)
-	console.log(token)
 
 	if (!token) {
 		console.log('!token')
@@ -30,7 +28,6 @@ export const authMiddleware = async (
 					})
 				}
 				req.user = decoded as User
-				console.log('decoded token at auth middleware', decoded)
 				if (
 					(decoded.iss =
 						process.env.API_URI &&
