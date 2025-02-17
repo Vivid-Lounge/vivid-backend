@@ -1,15 +1,14 @@
 {
 	"compilerOptions": {
 		"target": "ES6",
-		"module": "CommonJS",
+		"module": "node16",
 		// "rootDir": "./",
 		"outDir": "dist",
 		"esModuleInterop": true,
 		"strict": true,
 		"resolveJsonModule": true,
 		"baseUrl": "src", // This is required for paths to work
-
-		"typeRoots": ["./node_modules/@types", "./src/types", "./src/shared"]
+		"typeRoots": ["./node_modules/@types", "./src/types", "./src/shared/helpers", "./src/shared/types"],
 	},
 
 	"include": ["src"],

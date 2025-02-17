@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const qr_controller_1 = require("../controllers/qr.controller");
+const express_validator_1 = require("express-validator");
+const middlewares_1 = require("../workers/middlewares");
+const router = (0, express_1.Router)();
+router.get('/qr', middlewares_1.authMiddleware, qr_controller_1.getQRCodes);
+router.delete('/qr', middlewares_1.authMiddleware, qr_controller_1.deleteAllQRCodes);
+router.get('/qr/:id', middlewares_1.authMiddleware, qr_controller_1.getQRCode);
+router.delete('/qr/:id', middlewares_1.authMiddleware, qr_controller_1.deleteQRCode);
+router.post('/qr', [(0, express_validator_1.body)('numTables')], middlewares_1.authMiddleware, qr_controller_1.generateQR);
+exports.default = router;
